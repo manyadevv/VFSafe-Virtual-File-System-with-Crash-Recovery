@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+# virtual file system contents are runtime data, not source code
+storage/*
+!storage/.gitkeep

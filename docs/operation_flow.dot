@@ -1,0 +1,19 @@
+digraph Op {
+  rankdir=TB; nodesep=0.3; ranksep=0.28; fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, margin="0.16,0.08"];
+  edge [fontname="Helvetica", fontsize=9];
+  labelloc=t; label="One operation, step by step - red ovals are the crash checkpoints"; fontsize=14;
+
+  v  [label="1. Validate input (bad input stops here, nothing is logged)", fillcolor="#e8f1fb"];
+  x1 [label="CRASH POINT  before_journal\n-> operation never happened", shape=oval, fillcolor="#ffd9d9", fontsize=10];
+  b  [label="2. Write BEGIN record to journal + fsync\n(crash point during_journal = record only half written -> discarded)", fillcolor="#fff0c2"];
+  x3 [label="CRASH POINT  after_journal\n-> recovery REDOes it", shape=oval, fillcolor="#ffd9d9", fontsize=10];
+  a1 [label="3a. Write the data file (atomic: temp file + rename)", fillcolor="#e9dcf7"];
+  x4 [label="CRASH POINT  during_apply\n(data changed, metadata not) -> recovery REDOes it", shape=oval, fillcolor="#ffd9d9", fontsize=10];
+  a2 [label="3b. Update metadata.json (atomic)", fillcolor="#e9dcf7"];
+  x5 [label="CRASH POINT  after_apply\n-> recovery REDOes (harmless) + writes COMMIT", shape=oval, fillcolor="#ffd9d9", fontsize=10];
+  c  [label="4. Write COMMIT record to journal + fsync", fillcolor="#fff0c2"];
+  x6 [label="CRASH POINT  after_commit\n-> nothing to recover", shape=oval, fillcolor="#ffd9d9", fontsize=10];
+  ok [label="5. Tell the user \"done\"", fillcolor="#d6f5d6"];
+  v -> x1 -> b -> x3 -> a1 -> x4 -> a2 -> x5 -> c -> x6 -> ok;
+}

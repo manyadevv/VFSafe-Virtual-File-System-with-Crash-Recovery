@@ -1,0 +1,37 @@
+digraph VFSafe {
+  rankdir=TB; nodesep=0.45; ranksep=0.6; fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, margin="0.18,0.10"];
+  edge [fontname="Helvetica", fontsize=9, color="#555555"];
+  labelloc=t; label="VFSafe - System Architecture"; fontsize=16;
+
+  user [label="User\n(PowerShell / VS Code terminal)", fillcolor="#f3f3f3", shape=oval];
+  cli  [label="Command-Line Interface\nmain.py", fillcolor="#cfe8ff"];
+  fm   [label="File Operation Manager\nfile_manager.py\ncreate / read / write / append / rename / delete / list", fillcolor="#cfe8ff"];
+  val  [label="Input Validation\nvalidation.py + errors.py", fillcolor="#e8f1fb"];
+  crash[label="Crash Simulator\ncrash.py", fillcolor="#ffd9d9"];
+  jr   [label="Journal Manager\njournal.py\n(write-ahead log)", fillcolor="#fff0c2"];
+  rec  [label="Recovery Manager\nrecovery.py", fillcolor="#d6f5d6"];
+  cc   [label="Consistency Checker\nconsistency.py (fsck)", fillcolor="#d6f5d6"];
+  meta [label="Metadata Manager\nmetadata.py", fillcolor="#e9dcf7"];
+  st   [label="Virtual Storage Layer\nstorage.py\n(safe atomic writes)", fillcolor="#e9dcf7"];
+
+  subgraph cluster_disk { label="storage/ folder (the ONLY place VFSafe writes)"; style="dashed"; color="#888888"; fontsize=11;
+    jfile [label="journal.log", shape=note, fillcolor="#fff0c2"];
+    mfile [label="metadata.json", shape=note, fillcolor="#e9dcf7"];
+    dfile [label="data/  (virtual files)", shape=folder, fillcolor="#e9dcf7"];
+  }
+
+  user -> cli [label="commands"];
+  cli -> fm [label="operation"];
+  fm -> val [label="1. validate"];
+  fm -> jr [label="2. BEGIN\n4. COMMIT"];
+  fm -> st [label="3. apply data"];
+  fm -> meta [label="3. apply metadata"];
+  crash -> fm [style=dashed, color="#cc3333", label="stops at\ncheckpoints"];
+  cli -> rec [label="at every start-up", style=bold];
+  rec -> jr [label="find BEGIN\nwithout COMMIT"];
+  rec -> fm [label="redo (apply)"];
+  rec -> cc [label="then verify"];
+  cc -> meta [label="compare"]; cc -> st [label="compare"]; cc -> jr [label="check"];
+  jr -> jfile; meta -> mfile; st -> dfile;
+}

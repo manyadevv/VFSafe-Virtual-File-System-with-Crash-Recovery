@@ -1,0 +1,2 @@
+# VFSafe uses ONLY the Python standard library (Python 3.8 or newer).
+# There is nothing to install with pip.

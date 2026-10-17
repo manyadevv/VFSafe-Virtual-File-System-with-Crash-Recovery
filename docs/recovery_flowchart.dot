@@ -1,0 +1,30 @@
+digraph Recovery {
+  rankdir=TB; nodesep=0.4; ranksep=0.45; fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#eef3ff", margin="0.16,0.09"];
+  edge [fontname="Helvetica", fontsize=10];
+  labelloc=t; label="VFSafe - Start-up Recovery Flowchart"; fontsize=16;
+
+  start [label="Program starts", shape=oval, fillcolor="#f3f3f3"];
+  load  [label="Load metadata.json\nDelete leftover temp files (tmp/)"];
+  read  [label="Read journal.log\n(check CRC of every line;\ndamaged lines are skipped + reported)"];
+  torn  [label="Last journal line cut off\n(no newline at the end)?", shape=diamond, fillcolor="#fff0c2"];
+  disc  [label="DISCARD the torn record\n(that operation never became official)", fillcolor="#ffd9d9"];
+  pend  [label="Any BEGIN without a\nmatching COMMIT?", shape=diamond, fillcolor="#fff0c2"];
+  redo  [label="REDO that operation\n(apply again - safe to repeat)", fillcolor="#d6f5d6"];
+  commit[label="Write COMMIT (by recovery)", fillcolor="#d6f5d6"];
+  more  [label="More pending\noperations?", shape=diamond, fillcolor="#fff0c2"];
+  fsck  [label="Run consistency check\n(metadata vs data files vs journal)"];
+  ok    [label="Consistent?", shape=diamond, fillcolor="#fff0c2"];
+  good  [label="Report: file system is consistent", fillcolor="#d6f5d6"];
+  bad   [label="Report the problems\n(never silently ignored)", fillcolor="#ffd9d9"];
+  run   [label="Accept commands", shape=oval, fillcolor="#f3f3f3"];
+
+  start -> load -> read -> torn;
+  torn -> disc [label="yes"]; torn -> pend [label="no"];
+  disc -> pend;
+  pend -> redo [label="yes"]; pend -> fsck [label="no"];
+  redo -> commit -> more;
+  more -> redo [label="yes"]; more -> fsck [label="no"];
+  fsck -> ok; ok -> good [label="yes"]; ok -> bad [label="no"];
+  good -> run; bad -> run;
+}
